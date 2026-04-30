@@ -1,0 +1,21 @@
+{
+  "name": "toyverse",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@9.12.0",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev --parallel",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "db:generate": "pnpm --filter @toyverse/db prisma:generate",
+    "db:migrate": "pnpm --filter @toyverse/db prisma:migrate",
+    "db:studio": "pnpm --filter @toyverse/db prisma:studio"
+  },
+  "devDependencies": {
+    "turbo": "2.2.3",
+    "typescript": "5.6.3",
+    "prettier": "3.3.3"
+  }
+}
