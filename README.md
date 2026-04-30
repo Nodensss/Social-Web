@@ -38,10 +38,19 @@ Web: http://localhost:3000 · Health: http://localhost:3000/api/health
 По умолчанию — `mock`, чтобы UI работал без ключей. Системные промпты — на русском,
 правила child-safety см. `packages/ai/src/prompts.ts` и ТЗ §8.
 
+## Этап 2: вход и пайплайн игрушки
+
+- Magic-link: `POST /api/auth/magic-link` создаёт сессию и отправляет письмо через Resend. Без `RESEND_API_KEY` ссылка пишется в лог и возвращается в dev-ответе.
+- Telegram OAuth: `/api/auth/telegram` проверяет подпись Telegram Login Widget и кладёт cookie `toyverse_session`.
+- Upload: `POST /api/toys` принимает `multipart/form-data` с полем `photo`, загружает файл в S3. Если S3 не настроен, используется локальная папка `LOCAL_UPLOAD_DIR`.
+- Очередь: для игрушки создаются `ProcessingJob` и BullMQ jobs `image_stylize`, `bio_generate`, а при `FEATURE_3D_ENABLED=true` ещё `model_3d`.
+- Worker: `workers/jobs` вызывает общий use-case `processToyJob` из `packages/core`.
+- AI: `packages/ai` содержит mock, Anthropic, OpenAI и Replicate-адаптеры. JSON био валидируется через `ToyBioSchema`, текстовый AI-вывод проходит `moderateText` перед сохранением.
+
 ## Статус каркаса
 
 - [x] Этап 1 — монорепо, схема БД, заглушки страниц, mock-AI, бот, очередь.
-- [ ] Этап 2 — загрузка фото, S3, ProcessingJob end-to-end, реальные провайдеры.
+- [x] Этап 2 — загрузка фото, S3/local upload, ProcessingJob end-to-end, Anthropic/OpenAI/Replicate-адаптеры, карточка игрушки.
 - [ ] Этап 3 — лента, посты, лайки, комментарии от лица игрушек.
 - [ ] Этап 4 — Telegram-бот: загрузка фото и уведомления.
 - [ ] Этап 5 — friendship, AI-история знакомства, экспорт данных.

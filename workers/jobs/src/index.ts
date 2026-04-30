@@ -1,22 +1,27 @@
 import "dotenv/config";
-import { Queue, Worker } from "bullmq";
-import IORedis from "ioredis";
+import {
+  getToyProcessingConnection,
+  processToyJob,
+  TOY_PROCESSING_QUEUE,
+  type ToyProcessingQueueJob,
+} from "@toyverse/core";
+import { Worker } from "bullmq";
 
-const connection = new IORedis(process.env.REDIS_URL ?? "redis://localhost:6379", {
-  maxRetriesPerRequest: null,
-});
-
-export const toyQueue = new Queue("toy-processing", { connection });
-
-// Минимальный воркер-заглушка. Реальные обработчики (image_stylize, model_3d,
-// bio_generate) — этап 2 ТЗ.
-new Worker(
-  "toy-processing",
+const worker = new Worker<ToyProcessingQueueJob>(
+  TOY_PROCESSING_QUEUE,
   async (job) => {
-    console.log(`[jobs] received ${job.name}`, job.data);
-    return { ok: true };
+    console.log(`[jobs] ${job.name} started`, job.data);
+    return processToyJob(job.data.processingJobId);
   },
-  { connection },
+  { connection: getToyProcessingConnection() },
 );
 
-console.log("[jobs] worker started, queue=toy-processing");
+worker.on("completed", (job) => {
+  console.log(`[jobs] ${job.name} completed`, job.data);
+});
+
+worker.on("failed", (job, error) => {
+  console.error(`[jobs] ${job?.name ?? "unknown"} failed`, error);
+});
+
+console.log(`[jobs] worker started, queue=${TOY_PROCESSING_QUEUE}`);

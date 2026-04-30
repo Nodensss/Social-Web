@@ -17,8 +17,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               🧸 ToyVerse
             </Link>
             <div className="flex items-center gap-4 text-sm">
-              <Link href="/" className="hover:text-toy-accent">Лента</Link>
-              <Link href="/toys" className="hover:text-toy-accent">Игрушки</Link>
+              <Link href="/" className="hover:text-toy-accent">
+                Лента
+              </Link>
+              <Link href="/toys" className="hover:text-toy-accent">
+                Игрушки
+              </Link>
               <Link
                 href="/toys/new"
                 className="rounded-full bg-toy-accent px-3 py-1.5 text-white hover:opacity-90"

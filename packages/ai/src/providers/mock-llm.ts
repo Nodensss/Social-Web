@@ -18,13 +18,7 @@ export const mockLLM: LLM = {
     const species = (speciesHint ?? "toy").toLowerCase();
     const surname = SPECIES_SURNAMES[species] ?? "Игрушкин";
     const firstName = pick(["Симба", "Черныш", "Вараша", "Оля", "Тиша", "Боня"]);
-    const patronymic = pick([
-      "Муфассович",
-      "Диегович",
-      "Вариниович",
-      "Капибаровна",
-      "Тигрович",
-    ]);
+    const patronymic = pick(["Муфассович", "Диегович", "Вариниович", "Капибаровна", "Тигрович"]);
     return {
       fullName: `${surname} ${firstName} ${patronymic}`,
       species,
@@ -35,7 +29,9 @@ export const mockLLM: LLM = {
   },
   async generatePost({ catchphrases }) {
     const phrase = catchphrases[0] ?? "Привет!";
-    return { text: `${phrase} Сегодня у меня был чудесный день: я подружился с подушкой и нашёл новый уютный угол.` };
+    return {
+      text: `${phrase} Сегодня у меня был чудесный день: я подружился с подушкой и нашёл новый уютный угол.`,
+    };
   },
   async moderateText(text) {
     const banned = ["убить", "кровь", "ненавижу"];

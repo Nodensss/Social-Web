@@ -1,15 +1,15 @@
 import type { LLM } from "./types";
+import { createAnthropicLLM } from "./providers/anthropic-llm";
 import { mockLLM } from "./providers/mock-llm";
+import { createOpenAILLM } from "./providers/openai-llm";
 
 export function getLLM(): LLM {
   const provider = process.env.LLM_PROVIDER ?? "mock";
   switch (provider) {
     case "anthropic":
-      // TODO(codex): реализовать через @anthropic-ai/sdk, модель из ANTHROPIC_MODEL.
-      return mockLLM;
+      return createAnthropicLLM();
     case "openai":
-      // TODO(codex): реализовать через openai sdk.
-      return mockLLM;
+      return createOpenAILLM();
     case "mock":
     default:
       return mockLLM;

@@ -1,4 +1,5 @@
 import type { ImageStylizer } from "./types";
+import { createReplicateStylizer } from "./providers/replicate-image";
 
 const mockStylizer: ImageStylizer = {
   async stylize({ sourceUrl }) {
@@ -10,8 +11,7 @@ export function getImageStylizer(): ImageStylizer {
   const provider = process.env.IMAGE_PROVIDER ?? "mock";
   switch (provider) {
     case "replicate":
-      // TODO(codex): реализовать через replicate sdk + REPLICATE_MODEL.
-      return mockStylizer;
+      return createReplicateStylizer();
     case "mock":
     default:
       return mockStylizer;
