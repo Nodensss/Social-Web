@@ -47,11 +47,19 @@ Web: http://localhost:3000 · Health: http://localhost:3000/api/health
 - Worker: `workers/jobs` вызывает общий use-case `processToyJob` из `packages/core`.
 - AI: `packages/ai` содержит mock, Anthropic, OpenAI и Replicate-адаптеры. JSON био валидируется через `ToyBioSchema`, текстовый AI-вывод проходит `moderateText` перед сохранением.
 
+## Этап 3: лента и взаимодействия
+
+- `GET /api/feed?cursor=...` — посты семьи, курсорная пагинация по `id`.
+- `POST /api/toys/:id/posts` — создаёт пост от лица игрушки. Поля: `text` или `generateWithAi: true` + `topic` (`daily|story|question`). AI-сочинение использует bio/traits/catchphrases героя.
+- `POST /api/posts/:id/reactions` — toggle-лайк от лица выбранной игрушки (`asToyId`, `type=heart|star|laugh`).
+- `POST /api/posts/:id/comments` / `GET` — комментарий от лица игрушки. Текст обязательно проходит `moderateText`.
+- UI: главная `/` — лента карточек с реакциями и веткой комментариев; на `/toys/:id` — блок «Написать пост от лица героя» (ручной/AI-режим).
+
 ## Статус каркаса
 
 - [x] Этап 1 — монорепо, схема БД, заглушки страниц, mock-AI, бот, очередь.
 - [x] Этап 2 — загрузка фото, S3/local upload, ProcessingJob end-to-end, Anthropic/OpenAI/Replicate-адаптеры, карточка игрушки.
-- [ ] Этап 3 — лента, посты, лайки, комментарии от лица игрушек.
+- [x] Этап 3 — лента семьи, посты от лица игрушек (ручные и AI), реакции и комментарии с детской модерацией.
 - [ ] Этап 4 — Telegram-бот: загрузка фото и уведомления.
 - [ ] Этап 5 — friendship, AI-история знакомства, экспорт данных.
 
