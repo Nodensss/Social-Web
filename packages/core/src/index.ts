@@ -155,11 +155,11 @@ export async function publishPost(params: {
       traits: toy.personalityTraits,
       catchphrases: toy.catchphrases,
     }, theme);
-  } else {
-    // Moderate user-provided text
-    const mod = await moderateText(finalContent);
-    finalContent = mod.filteredText;
   }
+
+  // Moderate ALL text before saving — both AI-generated and user-provided (architectural rule)
+  const mod = await moderateText(finalContent);
+  finalContent = mod.filteredText;
 
   const post = await prisma.post.create({
     data: {
