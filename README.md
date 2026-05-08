@@ -43,3 +43,14 @@ Access the web app at `http://localhost:3000`.
 
 ## Development
 To mock AI responses locally, simply leave the API keys (e.g., `ANTHROPIC_API_KEY`, `REPLICATE_API_TOKEN`) empty in your `.env`. The `packages/ai` adapters will automatically fallback to mocked responses.
+
+## Telegram Bot Deployment (Railway)
+The Telegram bot is located in `apps/bot`.
+To deploy on Railway:
+1. Connect your GitHub repository to Railway.
+2. Select the `apps/bot` directory as the root for the new service (or set the root directory in settings).
+3. Set the start command to `pnpm --filter @toyverse/bot start`.
+4. Required environment variables for the bot:
+   - `DATABASE_URL`
+   - `TELEGRAM_BOT_TOKEN`
+   - `USE_TELEGRAM_NOTIFICATIONS="true"`

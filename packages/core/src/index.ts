@@ -1,7 +1,7 @@
 import { EventSchemas, Inngest } from 'inngest';
 import { prisma } from '@toyverse/db';
 import { generateToyBio, stylizeImage, generateToyPost, moderateText } from '@toyverse/ai';
-
+import { notifyToyOwner } from './notifications';
 // --- Inngest Setup ---
 
 type ProcessToyJobEvent = {
@@ -179,7 +179,7 @@ export async function publishPost(params: {
 export async function addComment(params: { postId: string; authorToyId: string; text: string }) {
   const mod = await moderateText(params.text);
   
-  return prisma.comment.create({
+  const comment = await prisma.comment.create({
     data: {
       postId: params.postId,
       authorToyId: params.authorToyId,
@@ -187,6 +187,18 @@ export async function addComment(params: { postId: string; authorToyId: string; 
     },
     include: { authorToy: true }
   });
+
+  const post = await prisma.post.findUnique({ where: { id: params.postId } });
+  if (post && post.authorToyId !== params.authorToyId) {
+    await notifyToyOwner(post.authorToyId, {
+      type: 'NEW_COMMENT',
+      postId: params.postId,
+      authorToyId: params.authorToyId,
+      text: mod.filteredText
+    });
+  }
+
+  return comment;
 }
 
 export async function addReaction(params: { postId: string; toyId: string; type: 'HEART' | 'STAR' | 'LAUGH' }) {
@@ -211,6 +223,17 @@ export async function addReaction(params: { postId: string; toyId: string; type:
   await prisma.reaction.create({
     data: params
   });
+
+  const post = await prisma.post.findUnique({ where: { id: params.postId } });
+  if (post && post.authorToyId !== params.toyId) {
+    await notifyToyOwner(post.authorToyId, {
+      type: 'NEW_REACTION',
+      postId: params.postId,
+      toyId: params.toyId,
+      reactionType: params.type
+    });
+  }
+
   return { added: true };
 }
 
@@ -250,4 +273,58 @@ export async function getToyProfile(toyId: string) {
       friendshipsB: { include: { toyA: true } }
     }
   });
+}
+
+// --- Friendships ---
+
+export async function requestFriendship(toyAId: string, toyBId: string) {
+  // Check if already friends or pending
+  const existing = await prisma.friendship.findFirst({
+    where: {
+      OR: [
+        { toyAId, toyBId },
+        { toyAId: toyBId, toyBId: toyAId }
+      ]
+    }
+  });
+
+  if (existing) return existing;
+
+  return prisma.friendship.create({
+    data: { toyAId, toyBId, status: 'PENDING' }
+  });
+}
+
+export async function acceptFriendship(friendshipId: string) {
+  return prisma.friendship.update({
+    where: { id: friendshipId },
+    data: { status: 'ACCEPTED' }
+  });
+}
+
+// --- Updates & Settings ---
+
+export async function updateToy(toyId: string, data: { fullName?: string; bio?: string }) {
+  return prisma.toy.update({
+    where: { id: toyId },
+    data,
+  });
+}
+
+export async function linkTelegramAccount(code: string, telegramId: string) {
+  // Mock logic: in reality, "code" should map to a User or Family ID stored in Redis or DB.
+  // For MVP, we'll assume the code is literally the familyId for simplicity, or we check a VerificationToken.
+  // Let's assume code is a familyId to link the user.
+  
+  const family = await prisma.family.findUnique({ where: { id: code } });
+  if (!family) throw new Error('Invalid code');
+
+  // Let's create a child profile for them if they don't have one, or just update the owner's telegramId.
+  // The simplest MVP is finding the owner and setting telegramId.
+  const user = await prisma.user.update({
+    where: { id: family.ownerId },
+    data: { telegramId }
+  });
+
+  return user;
 }
