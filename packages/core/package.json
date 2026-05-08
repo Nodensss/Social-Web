@@ -4,8 +4,9 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "dependencies": {
+    "@toyverse/ai": "workspace:*",
     "@toyverse/db": "workspace:*",
-    "@toyverse/ai": "workspace:*"
+    "inngest": "^4.3.0"
   },
   "devDependencies": {
     "typescript": "^5.0.0"

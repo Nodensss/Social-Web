@@ -13,6 +13,7 @@
     "@toyverse/core": "workspace:*",
     "@toyverse/db": "workspace:*",
     "@toyverse/ui": "workspace:*",
+    "inngest": "^4.3.0",
     "next": "16.2.6",
     "next-auth": "5.0.0-beta.31",
     "react": "19.2.4",

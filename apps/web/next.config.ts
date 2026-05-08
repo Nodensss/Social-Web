@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  transpilePackages: ["@toyverse/core", "@toyverse/db", "@toyverse/ai", "@toyverse/ui"],
 };
 
 export default nextConfig;
