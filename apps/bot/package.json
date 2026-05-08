@@ -1,0 +1,18 @@
+{
+  "name": "@toyverse/bot",
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "grammy": "^1.30.0",
+    "@toyverse/core": "workspace:*",
+    "@toyverse/db": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "tsx": "^4.0.0"
+  }
+}

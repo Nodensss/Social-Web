@@ -1,0 +1,206 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// NextAuth.js standard models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ToyVerse Core Models
+
+enum Role {
+  PARENT
+  CHILD
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  telegramId    String?   @unique
+  role          Role      @default(PARENT)
+  createdAt     DateTime  @default(now())
+
+  // Relationships
+  familyId    String?
+  family      Family? @relation(fields: [familyId], references: [id])
+  ownedFamily Family? @relation("FamilyOwner")
+
+  accounts Account[]
+  sessions Session[]
+}
+
+model Family {
+  id        String   @id @default(cuid())
+  name      String
+  ownerId   String   @unique
+  owner     User     @relation("FamilyOwner", fields: [ownerId], references: [id])
+  createdAt DateTime @default(now())
+
+  users    User[]
+  children ChildProfile[]
+}
+
+model ChildProfile {
+  id        String  @id @default(cuid())
+  familyId  String
+  family    Family  @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  name      String
+  birthYear Int
+  avatarUrl String?
+
+  toys Toy[]
+}
+
+enum ProcessingStatus {
+  PENDING
+  PROCESSING
+  READY
+  FAILED
+}
+
+model Toy {
+  id           String       @id @default(cuid())
+  ownerChildId String
+  ownerChild   ChildProfile @relation(fields: [ownerChildId], references: [id], onDelete: Cascade)
+
+  fullName          String?
+  species           String?
+  originalPhotoUrl  String?
+  processedImageUrl String?
+  model3dUrl        String?
+
+  bio               String?  @db.Text
+  personalityTraits String[] // PostgreSQL arrays
+  catchphrases      String[] // PostgreSQL arrays
+
+  createdAt DateTime         @default(now())
+  status    ProcessingStatus @default(PENDING)
+
+  posts          Post[]
+  comments       Comment[]
+  reactions      Reaction[]
+  processingJobs ProcessingJob[]
+
+  // Friendships where this toy is A
+  friendshipsA Friendship[] @relation("ToyAFriendships")
+  // Friendships where this toy is B
+  friendshipsB Friendship[] @relation("ToyBFriendships")
+}
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+model Friendship {
+  id        String           @id @default(cuid())
+  toyAId    String
+  toyA      Toy              @relation("ToyAFriendships", fields: [toyAId], references: [id], onDelete: Cascade)
+  toyBId    String
+  toyB      Toy              @relation("ToyBFriendships", fields: [toyBId], references: [id], onDelete: Cascade)
+  status    FriendshipStatus @default(PENDING)
+  createdAt DateTime         @default(now())
+
+  @@unique([toyAId, toyBId])
+}
+
+model Post {
+  id            String   @id @default(cuid())
+  authorToyId   String
+  authorToy     Toy      @relation(fields: [authorToyId], references: [id], onDelete: Cascade)
+  text          String   @db.Text
+  mediaUrls     String[]
+  generatedByAi Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  comments  Comment[]
+  reactions Reaction[]
+}
+
+model Comment {
+  id          String   @id @default(cuid())
+  postId      String
+  post        Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorToyId String
+  authorToy   Toy      @relation(fields: [authorToyId], references: [id], onDelete: Cascade)
+  text        String   @db.Text
+  createdAt   DateTime @default(now())
+}
+
+enum ReactionType {
+  HEART
+  STAR
+  LAUGH
+}
+
+model Reaction {
+  id        String       @id @default(cuid())
+  postId    String
+  post      Post         @relation(fields: [postId], references: [id], onDelete: Cascade)
+  toyId     String
+  toy       Toy          @relation(fields: [toyId], references: [id], onDelete: Cascade)
+  type      ReactionType
+  createdAt DateTime     @default(now())
+
+  @@unique([postId, toyId, type])
+}
+
+enum JobKind {
+  IMAGE_STYLIZE
+  MODEL_3D
+  BIO_GENERATE
+}
+
+model ProcessingJob {
+  id            String           @id @default(cuid())
+  toyId         String
+  toy           Toy              @relation(fields: [toyId], references: [id], onDelete: Cascade)
+  kind          JobKind
+  status        ProcessingStatus @default(PENDING)
+  providerJobId String?
+  payload       Json?
+  result        Json?
+  error         String?          @db.Text
+  createdAt     DateTime         @default(now())
+}
