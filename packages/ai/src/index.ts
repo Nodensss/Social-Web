@@ -1,4 +1,4 @@
-import { generateObject } from 'ai';
+import { generateObject, generateText } from 'ai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { z } from 'zod';
 import Replicate from 'replicate';
@@ -105,4 +105,32 @@ export async function stylizeImage(imageUrl: string): Promise<string> {
   );
 
   return Array.isArray(output) ? output[0] : (output as string);
+}
+
+export async function generateToyPost(toy: { fullName: string; bio: string; traits: string[]; catchphrases: string[] }, theme: string = 'что я делаю'): Promise<string> {
+  const anthropic = getAnthropic();
+
+  if (!anthropic) {
+    console.log(`[mock] Post generated for toy=${toy.fullName}`);
+    return `Всем привет, это я, ${toy.fullName}! Сегодня ${theme}. ${toy.catchphrases[0] || 'Ура!'}`;
+  }
+
+  const prompt = `
+Ты - детская игрушка по имени ${toy.fullName}. Твоя биография: ${toy.bio}.
+Твои черты характера: ${toy.traits.join(', ')}.
+Твои коронные фразочки: ${toy.catchphrases.join(', ')}.
+
+Напиши короткий пост для социальной сети игрушек. 
+Тема: ${theme}.
+Пост должен состоять из 2-4 предложений. Тон добрый, детский, от первого лица.
+Никакого насилия, страха или негатива. Обязательно используй хотя бы одну коронную фразу, если это уместно.
+  `;
+
+  const { text } = await generateText({
+    model: anthropic('claude-3-haiku-20240307'),
+    prompt,
+  });
+
+  const moderation = await moderateText(text);
+  return moderation.safe ? text : moderation.filteredText;
 }

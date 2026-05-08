@@ -1,6 +1,6 @@
 import { EventSchemas, Inngest } from 'inngest';
 import { prisma } from '@toyverse/db';
-import { generateToyBio, stylizeImage } from '@toyverse/ai';
+import { generateToyBio, stylizeImage, generateToyPost, moderateText } from '@toyverse/ai';
 
 // --- Inngest Setup ---
 
@@ -130,4 +130,124 @@ export async function processToyJob(toyId: string, jobId: string) {
     ]);
     throw error;
   }
+}
+
+// --- Feed & Interactions ---
+
+export async function publishPost(params: {
+  authorToyId: string;
+  text?: string;
+  mediaUrls?: string[];
+  theme?: string; // used for AI generation
+  generateByAi?: boolean;
+}) {
+  const { authorToyId, text, mediaUrls, theme, generateByAi } = params;
+
+  let finalContent = text || '';
+
+  if (generateByAi) {
+    const toy = await prisma.toy.findUnique({ where: { id: authorToyId } });
+    if (!toy) throw new Error('Toy not found');
+    
+    finalContent = await generateToyPost({
+      fullName: toy.fullName || 'Игрушка',
+      bio: toy.bio || '',
+      traits: toy.personalityTraits,
+      catchphrases: toy.catchphrases,
+    }, theme);
+  } else {
+    // Moderate user-provided text
+    const mod = await moderateText(finalContent);
+    finalContent = mod.filteredText;
+  }
+
+  const post = await prisma.post.create({
+    data: {
+      authorToyId,
+      text: finalContent,
+      mediaUrls: mediaUrls || [],
+      generatedByAi: !!generateByAi,
+    },
+    include: {
+      authorToy: true,
+    }
+  });
+
+  return post;
+}
+
+export async function addComment(params: { postId: string; authorToyId: string; text: string }) {
+  const mod = await moderateText(params.text);
+  
+  return prisma.comment.create({
+    data: {
+      postId: params.postId,
+      authorToyId: params.authorToyId,
+      text: mod.filteredText,
+    },
+    include: { authorToy: true }
+  });
+}
+
+export async function addReaction(params: { postId: string; toyId: string; type: 'HEART' | 'STAR' | 'LAUGH' }) {
+  // Check if reaction already exists
+  const existing = await prisma.reaction.findUnique({
+    where: {
+      postId_toyId_type: {
+        postId: params.postId,
+        toyId: params.toyId,
+        type: params.type,
+      }
+    }
+  });
+
+  if (existing) {
+    // Toggle off
+    await prisma.reaction.delete({ where: { id: existing.id } });
+    return { added: false };
+  }
+
+  // Toggle on
+  await prisma.reaction.create({
+    data: params
+  });
+  return { added: true };
+}
+
+export async function getFamilyFeed(familyId: string, limit = 20) {
+  // Find all toys in this family
+  const family = await prisma.family.findUnique({
+    where: { id: familyId },
+    include: { children: { include: { toys: true } } }
+  });
+
+  if (!family) throw new Error('Family not found');
+
+  const toyIds = family.children.flatMap(c => c.toys.map(t => t.id));
+
+  // Get posts from these toys
+  const posts = await prisma.post.findMany({
+    where: { authorToyId: { in: toyIds } },
+    orderBy: { createdAt: 'desc' },
+    take: limit,
+    include: {
+      authorToy: true,
+      comments: { include: { authorToy: true }, orderBy: { createdAt: 'asc' } },
+      reactions: true,
+    }
+  });
+
+  return posts;
+}
+
+export async function getToyProfile(toyId: string) {
+  return prisma.toy.findUnique({
+    where: { id: toyId },
+    include: {
+      ownerChild: { include: { family: true } },
+      posts: { orderBy: { createdAt: 'desc' }, take: 5 },
+      friendshipsA: { include: { toyB: true } },
+      friendshipsB: { include: { toyA: true } }
+    }
+  });
 }
