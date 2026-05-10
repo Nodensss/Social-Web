@@ -23,6 +23,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/toys" className="hover:text-toy-accent">
                 Игрушки
               </Link>
+              <Link href="/family" className="hover:text-toy-accent">
+                Семья
+              </Link>
               <Link
                 href="/toys/new"
                 className="rounded-full bg-toy-accent px-3 py-1.5 text-white hover:opacity-90"
