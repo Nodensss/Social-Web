@@ -77,3 +77,17 @@ export async function deleteToyForUser(userId: string, toyId: string): Promise<v
   if (!toy) throw notFound("Игрушка не найдена.");
   await prisma.toy.delete({ where: { id: toyId } });
 }
+
+let notifier: ((telegramId: string, text: string) => Promise<void>) | null = null;
+
+export function setNotifier(fn: (telegramId: string, text: string) => Promise<void>) {
+  notifier = fn;
+}
+
+export async function notifyTelegram(telegramId: string, text: string): Promise<void> {
+  if (notifier) {
+    await notifier(telegramId, text).catch((e) => {
+      console.warn("[core] notifyTelegram failed", e);
+    });
+  }
+}

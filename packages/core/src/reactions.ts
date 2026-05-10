@@ -1,6 +1,7 @@
 import { ReactionType, prisma, type Reaction } from "@toyverse/db";
 import { z } from "zod";
 import { assertPostInFamily, assertToyInFamily } from "./posts";
+import { findOwnerTelegramIdForPost, notifyTelegram } from "./telegram";
 
 const ReactionSchema = z.object({
   asToyId: z.string().min(1),
@@ -31,5 +32,24 @@ export async function toggleReaction(
   const reaction = await prisma.reaction.create({
     data: { postId, toyId: asToyId, type },
   });
+
+  const ownerTelegramId = await findOwnerTelegramIdForPost(postId);
+  if (ownerTelegramId) {
+    const actingToy = await prisma.toy.findUnique({
+      where: { id: asToyId },
+      select: { fullName: true }
+    });
+    const toyName = actingToy?.fullName ?? "Игрушка";
+
+    let reactionEmoji = "❤️";
+    if (type === ReactionType.star) reactionEmoji = "⭐";
+    if (type === ReactionType.laugh) reactionEmoji = "😂";
+
+    await notifyTelegram(
+      ownerTelegramId,
+      `${reactionEmoji} ${toyName} отреагировала на ваш пост!`
+    );
+  }
+
   return { reaction, removed: false };
 }
