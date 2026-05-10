@@ -3,6 +3,7 @@ import { getLLM } from "@toyverse/ai";
 import { z } from "zod";
 import { badRequest } from "./errors";
 import { assertPostInFamily, assertToyInFamily } from "./posts";
+import { findOwnerTelegramIdForPost, notifyTelegram } from "./telegram";
 
 const CreateCommentSchema = z.object({
   asToyId: z.string().min(1),
@@ -28,10 +29,20 @@ export async function createComment(
     );
   }
 
-  return prisma.comment.create({
+  const comment = await prisma.comment.create({
     data: { postId, authorToyId: asToyId, text: text.trim() },
     include: { authorToy: true },
   });
+
+  const ownerTelegramId = await findOwnerTelegramIdForPost(postId);
+  if (ownerTelegramId) {
+    await notifyTelegram(
+      ownerTelegramId,
+      `💬 Игрушка ${comment.authorToy.fullName} оставила комментарий:\n\n${comment.text}`
+    );
+  }
+
+  return comment;
 }
 
 export async function listCommentsForPost(
