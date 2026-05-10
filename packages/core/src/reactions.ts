@@ -1,7 +1,7 @@
 import { ReactionType, prisma, type Reaction } from "@toyverse/db";
 import { z } from "zod";
 import { assertPostInFamily, assertToyInFamily } from "./posts";
-import { findOwnerTelegramIdForPost, notifyTelegram } from "./telegram";
+import { notifyTelegram, ownerToNotifyForPost } from "./telegram";
 
 const ReactionSchema = z.object({
   asToyId: z.string().min(1),
@@ -33,7 +33,7 @@ export async function toggleReaction(
     data: { postId, toyId: asToyId, type },
   });
 
-  const ownerTelegramId = await findOwnerTelegramIdForPost(postId);
+  const ownerTelegramId = await ownerToNotifyForPost(postId, asToyId);
   if (ownerTelegramId) {
     const actingToy = await prisma.toy.findUnique({
       where: { id: asToyId },

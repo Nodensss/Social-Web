@@ -59,6 +59,21 @@ export async function findOwnerTelegramIdForToy(toyId: string): Promise<string |
   return toy?.ownerChild.family.owner.telegramId ?? null;
 }
 
+/**
+ * Возвращает Telegram-id владельца поста, кроме случая, когда инициатор
+ * (другая игрушка) принадлежит тому же владельцу — чтобы не спамить себе же.
+ */
+export async function ownerToNotifyForPost(
+  postId: string,
+  actingToyId: string,
+): Promise<string | null> {
+  const ownerTg = await findOwnerTelegramIdForPost(postId);
+  if (!ownerTg) return null;
+  const actorTg = await findOwnerTelegramIdForToy(actingToyId);
+  if (actorTg && actorTg === ownerTg) return null;
+  return ownerTg;
+}
+
 export async function findOwnerTelegramIdForPost(postId: string): Promise<string | null> {
   const post = await prisma.post.findUnique({
     where: { id: postId },
@@ -84,10 +99,30 @@ export function setNotifier(fn: (telegramId: string, text: string) => Promise<vo
   notifier = fn;
 }
 
+async function notifyViaBotApi(telegramId: string, text: string): Promise<void> {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!token) return;
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ chat_id: telegramId, text }),
+    });
+    if (!res.ok) {
+      console.warn("[core] notifyTelegram bot api status", res.status);
+    }
+  } catch (e) {
+    console.warn("[core] notifyTelegram fetch failed", e);
+  }
+}
+
 export async function notifyTelegram(telegramId: string, text: string): Promise<void> {
   if (notifier) {
     await notifier(telegramId, text).catch((e) => {
       console.warn("[core] notifyTelegram failed", e);
     });
+    return;
   }
+  // Fallback для процессов без бота (web, worker): шлём напрямую через Bot API.
+  await notifyViaBotApi(telegramId, text);
 }

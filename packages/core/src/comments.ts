@@ -3,7 +3,7 @@ import { getLLM } from "@toyverse/ai";
 import { z } from "zod";
 import { badRequest } from "./errors";
 import { assertPostInFamily, assertToyInFamily } from "./posts";
-import { findOwnerTelegramIdForPost, notifyTelegram } from "./telegram";
+import { notifyTelegram, ownerToNotifyForPost } from "./telegram";
 
 const CreateCommentSchema = z.object({
   asToyId: z.string().min(1),
@@ -34,7 +34,7 @@ export async function createComment(
     include: { authorToy: true },
   });
 
-  const ownerTelegramId = await findOwnerTelegramIdForPost(postId);
+  const ownerTelegramId = await ownerToNotifyForPost(postId, asToyId);
   if (ownerTelegramId) {
     await notifyTelegram(
       ownerTelegramId,
