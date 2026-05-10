@@ -7,7 +7,6 @@ import {
   getToyByIdForUser,
   listFeedForUser,
   publishToyToFeed,
-  setNotifier,
   updateToyForUser,
   upsertTelegramUser,
   waitForToyReady,
@@ -208,8 +207,6 @@ export async function notifyTelegramUser(telegramId: string, text: string) {
     console.warn("[bot] notify failed", e);
   });
 }
-
-setNotifier(notifyTelegramUser);
 
 // Используется только для type-check — заглушка против неиспользования импорта.
 export const _notifierProbe = findUserByTelegramId;
