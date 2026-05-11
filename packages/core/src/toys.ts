@@ -2,7 +2,7 @@ import { getImageStylizer, getLLM, getThreeD } from "@toyverse/ai";
 import { JobKind, JobStatus, prisma, ToyStatus, type Prisma, type Toy } from "@toyverse/db";
 import { z } from "zod";
 import { badRequest, notFound } from "./errors";
-import { ensureDefaultFamilyForUser, getOrCreateDefaultChild } from "./auth";
+import { assertParentRole, ensureDefaultFamilyForUser, getOrCreateDefaultChild } from "./auth";
 import { enqueueToyProcessingJob } from "./queue";
 import { copyRemoteImageToStorage, uploadObject } from "./storage";
 
@@ -85,6 +85,7 @@ async function createProcessingJobs(toyId: string, payload: Prisma.InputJsonValu
 }
 
 export async function createToy(input: CreateToyInput): Promise<CreateToyResult> {
+  await assertParentRole(input.userId);
   const ownerChildId = await getOrCreateDefaultChild(input.userId, input.ownerChildId);
   const uploaded = await uploadObject({
     bytes: input.file.bytes,
@@ -128,6 +129,7 @@ export async function getToyForUser(userId: string, toyId: string) {
 }
 
 export async function updateToyForUser(userId: string, toyId: string, patch: unknown) {
+  await assertParentRole(userId);
   await assertToyAccess(userId, toyId);
   const data = ToyPatchSchema.parse(patch);
   return prisma.toy.update({
@@ -137,6 +139,7 @@ export async function updateToyForUser(userId: string, toyId: string, patch: unk
 }
 
 export async function publishToyToFeed(userId: string, toyId: string) {
+  await assertParentRole(userId);
   const toy = await assertToyAccess(userId, toyId);
   if (toy.status !== ToyStatus.ready) {
     throw badRequest("Игрушка ещё обрабатывается.");

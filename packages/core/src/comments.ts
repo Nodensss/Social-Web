@@ -1,6 +1,7 @@
 import { prisma, type Comment, type Toy } from "@toyverse/db";
 import { getLLM } from "@toyverse/ai";
 import { z } from "zod";
+import { assertParentRole } from "./auth";
 import { badRequest } from "./errors";
 import { assertPostInFamily, assertToyInFamily } from "./posts";
 
@@ -17,6 +18,7 @@ export async function createComment(
   postId: string,
   input: CreateCommentInput,
 ): Promise<CommentWithAuthor> {
+  await assertParentRole(userId);
   const { asToyId, text } = CreateCommentSchema.parse(input);
   const familyId = await assertPostInFamily(userId, postId);
   await assertToyInFamily(userId, asToyId, familyId);

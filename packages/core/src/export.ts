@@ -1,5 +1,5 @@
 import { prisma } from "@toyverse/db";
-import { ensureDefaultFamilyForUser } from "./auth";
+import { assertParentRole, ensureDefaultFamilyForUser } from "./auth";
 import { notFound } from "./errors";
 
 export type FamilyExport = {
@@ -60,6 +60,7 @@ export type FamilyExport = {
 };
 
 export async function exportFamily(userId: string): Promise<FamilyExport> {
+  await assertParentRole(userId);
   const familyId = await ensureDefaultFamilyForUser(userId);
   const family = await prisma.family.findUnique({ where: { id: familyId } });
   if (!family) throw notFound("Семья не найдена.");
@@ -136,6 +137,7 @@ export async function exportFamily(userId: string): Promise<FamilyExport> {
 }
 
 export async function deleteFamilyData(userId: string): Promise<void> {
+  await assertParentRole(userId);
   const familyId = await ensureDefaultFamilyForUser(userId);
   await prisma.$transaction(async (tx) => {
     // Отвязываем всех участников, чтобы FK не блокировал удаление семьи.

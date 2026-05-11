@@ -1,5 +1,6 @@
 import { ReactionType, prisma, type Reaction } from "@toyverse/db";
 import { z } from "zod";
+import { assertParentRole } from "./auth";
 import { assertPostInFamily, assertToyInFamily } from "./posts";
 
 const ReactionSchema = z.object({
@@ -15,6 +16,7 @@ export async function toggleReaction(
   postId: string,
   input: ToggleReactionInput,
 ): Promise<ToggleReactionResult> {
+  await assertParentRole(userId);
   const { asToyId, type = ReactionType.heart } = ReactionSchema.parse(input);
   const familyId = await assertPostInFamily(userId, postId);
   await assertToyInFamily(userId, asToyId, familyId);

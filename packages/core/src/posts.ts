@@ -1,7 +1,7 @@
 import { ReactionType, prisma, type Post, type Toy } from "@toyverse/db";
 import { getLLM } from "@toyverse/ai";
 import { z } from "zod";
-import { ensureDefaultFamilyForUser } from "./auth";
+import { assertParentRole, ensureDefaultFamilyForUser } from "./auth";
 import { badRequest, forbidden, notFound } from "./errors";
 
 const CreatePostSchema = z
@@ -32,6 +32,7 @@ export async function createPost(
   authorToyId: string,
   input: CreatePostInput,
 ): Promise<Post> {
+  await assertParentRole(userId);
   const data = CreatePostSchema.parse(input);
   const toy = await loadAuthorToyForUser(userId, authorToyId);
 

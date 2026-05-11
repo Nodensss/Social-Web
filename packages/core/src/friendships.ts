@@ -1,6 +1,6 @@
 import { FriendshipStatus, prisma, type Friendship, type Toy } from "@toyverse/db";
 import { z } from "zod";
-import { ensureDefaultFamilyForUser } from "./auth";
+import { assertParentRole, ensureDefaultFamilyForUser } from "./auth";
 import { badRequest, forbidden, notFound } from "./errors";
 
 const RequestSchema = z.object({
@@ -26,6 +26,7 @@ export async function requestFriendship(
   userId: string,
   input: RequestFriendshipInput,
 ): Promise<Friendship> {
+  await assertParentRole(userId);
   const { fromToyId, toToyId } = RequestSchema.parse(input);
   if (fromToyId === toToyId) throw badRequest("Нельзя дружить с самим собой.");
 

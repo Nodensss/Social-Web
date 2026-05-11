@@ -12,6 +12,7 @@ datasource db {
 enum UserRole {
   parent
   child
+  subscriber
 }
 
 enum ToyStatus {

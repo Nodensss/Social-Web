@@ -3,6 +3,7 @@ export * from "./comments";
 export * from "./errors";
 export * from "./export";
 export * from "./friendships";
+export * from "./invites";
 export * from "./posts";
 export * from "./queue";
 export * from "./reactions";

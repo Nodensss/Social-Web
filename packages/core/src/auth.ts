@@ -29,6 +29,7 @@ export type AuthUser = {
   telegramId: string | null;
   displayName: string;
   familyId: string | null;
+  role: UserRole;
 };
 
 export type SessionUser = {
@@ -67,6 +68,16 @@ async function createSession(
     },
   });
   return { token, expiresAt };
+}
+
+export async function assertParentRole(userId: string): Promise<void> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { role: true },
+  });
+  if (!user || user.role !== UserRole.parent) {
+    throw forbidden("Действие разрешено только родителям (администраторам семьи).");
+  }
 }
 
 export async function ensureDefaultFamilyForUser(userId: string): Promise<string> {
@@ -212,6 +223,7 @@ export async function getSessionUser(token?: string | null): Promise<SessionUser
       telegramId: session.user.telegramId,
       displayName: session.user.displayName,
       familyId: session.user.familyId,
+      role: session.user.role,
     },
   };
 }
@@ -249,6 +261,7 @@ export async function confirmSessionToken(
       telegramId: updated.user.telegramId,
       displayName: updated.user.displayName,
       familyId: updated.user.familyId,
+      role: updated.user.role,
     },
   };
 }
