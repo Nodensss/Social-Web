@@ -6,9 +6,12 @@ import { ensureDefaultFamilyForUser, getOrCreateDefaultChild } from "./auth";
 import { enqueueToyProcessingJob } from "./queue";
 import { copyRemoteImageToStorage, uploadObject } from "./storage";
 
+const CURRENT_YEAR = new Date().getFullYear();
+
 const ToyPatchSchema = z.object({
   fullName: z.string().min(3).max(120).optional(),
   bio: z.string().max(1200).optional(),
+  birthYear: z.number().int().min(1900).max(CURRENT_YEAR).nullable().optional(),
   personalityTraits: z.array(z.string().min(1).max(40)).max(8).optional(),
   catchphrases: z.array(z.string().min(1).max(120)).max(6).optional(),
 });
@@ -21,6 +24,8 @@ export type CreateToyInput = {
     contentType: string;
     originalName?: string;
   };
+  fullName?: string;
+  birthYear?: number;
   speciesHint?: string;
   colorHint?: string;
   childDescription?: string;
@@ -93,11 +98,33 @@ export async function createToy(input: CreateToyInput): Promise<CreateToyResult>
     prefix: "toys/original",
   });
 
+  const fullName = input.fullName?.trim();
+
+  // Простой режим: имя задано вручную → сразу готовая карточка, без очереди и AI.
+  if (fullName) {
+    const toy = await prisma.toy.create({
+      data: {
+        ownerChildId,
+        fullName,
+        species: input.speciesHint?.trim() || "игрушка",
+        birthYear: input.birthYear ?? null,
+        originalPhotoUrl: uploaded.url,
+        processedImageUrl: uploaded.url,
+        bio: input.childDescription?.trim() || "",
+        personalityTraits: [],
+        catchphrases: [],
+        status: ToyStatus.ready,
+      },
+    });
+    return { toy };
+  }
+
   const toy = await prisma.toy.create({
     data: {
       ownerChildId,
       fullName: "Игрушка обрабатывается",
       species: input.speciesHint?.trim() || "toy",
+      birthYear: input.birthYear ?? null,
       originalPhotoUrl: uploaded.url,
       personalityTraits: [],
       catchphrases: [],

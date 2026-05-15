@@ -48,6 +48,30 @@ export function NewToyForm() {
 
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="block space-y-2">
+          <span className="text-sm font-semibold">Имя игрушки</span>
+          <input
+            name="fullName"
+            required
+            className="w-full rounded-xl border border-toy-ink/15 bg-white px-4 py-3 outline-none focus:border-toy-accent"
+            placeholder="например: Барсик"
+          />
+        </label>
+        <label className="block space-y-2">
+          <span className="text-sm font-semibold">Год рождения</span>
+          <input
+            name="birthYear"
+            type="number"
+            inputMode="numeric"
+            min={1900}
+            max={2026}
+            className="w-full rounded-xl border border-toy-ink/15 bg-white px-4 py-3 outline-none focus:border-toy-accent"
+            placeholder="например: 2021"
+          />
+        </label>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <label className="block space-y-2">
           <span className="text-sm font-semibold">Кто это?</span>
           <input
             name="speciesHint"
@@ -66,7 +90,7 @@ export function NewToyForm() {
       </div>
 
       <label className="block space-y-2">
-        <span className="text-sm font-semibold">Пожелания к характеру</span>
+        <span className="text-sm font-semibold">Несколько слов об игрушке</span>
         <textarea
           name="childDescription"
           rows={4}
@@ -83,7 +107,7 @@ export function NewToyForm() {
         disabled={loading}
         className="w-full rounded-full bg-toy-accent px-5 py-3 font-bold text-white transition hover:opacity-90 disabled:opacity-60"
       >
-        {loading ? "Загружаем и ставим в очередь..." : "Создать игрушку"}
+        {loading ? "Создаём страницу игрушки..." : "Создать игрушку"}
       </button>
     </form>
   );

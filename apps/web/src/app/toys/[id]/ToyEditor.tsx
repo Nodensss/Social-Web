@@ -6,6 +6,7 @@ import { FormEvent, useMemo, useState } from "react";
 type Toy = {
   id: string;
   fullName: string;
+  birthYear: number | null;
   bio: string;
   personalityTraits: string[];
   catchphrases: string[];
@@ -50,6 +51,9 @@ export function ToyEditor({ toy }: { toy: Toy }) {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         fullName: String(formData.get("fullName") ?? ""),
+        birthYear: formData.get("birthYear")
+          ? Number.parseInt(String(formData.get("birthYear")), 10)
+          : null,
         bio: String(formData.get("bio") ?? ""),
         personalityTraits: linesToArray(String(formData.get("personalityTraits") ?? "")),
         catchphrases: linesToArray(String(formData.get("catchphrases") ?? "")),
@@ -112,6 +116,19 @@ export function ToyEditor({ toy }: { toy: Toy }) {
             <input
               name="fullName"
               defaultValue={toy.fullName}
+              className="w-full rounded-xl border border-toy-ink/15 px-4 py-3 outline-none focus:border-toy-accent"
+            />
+          </label>
+
+          <label className="block space-y-2">
+            <span className="text-sm font-semibold">Год рождения</span>
+            <input
+              name="birthYear"
+              type="number"
+              inputMode="numeric"
+              min={1900}
+              max={2026}
+              defaultValue={toy.birthYear ?? ""}
               className="w-full rounded-xl border border-toy-ink/15 px-4 py-3 outline-none focus:border-toy-accent"
             />
           </label>

@@ -108,6 +108,7 @@ model Toy {
   ownerChild         ChildProfile @relation(fields: [ownerChildId], references: [id], onDelete: Cascade)
   fullName           String
   species            String
+  birthYear          Int?
   originalPhotoUrl   String
   processedImageUrl  String?
   model3dUrl         String?

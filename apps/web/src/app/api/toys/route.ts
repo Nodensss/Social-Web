@@ -9,6 +9,13 @@ function formString(formData: FormData, key: string): string | undefined {
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 
+function formInt(formData: FormData, key: string): number | undefined {
+  const raw = formString(formData, key);
+  if (!raw) return undefined;
+  const parsed = Number.parseInt(raw, 10);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
 export async function GET() {
   try {
     const session = await requireApiUser();
@@ -32,6 +39,8 @@ export async function POST(request: Request) {
     const result = await createToy({
       userId: session.user.id,
       ownerChildId: formString(formData, "ownerChildId"),
+      fullName: formString(formData, "fullName"),
+      birthYear: formInt(formData, "birthYear"),
       speciesHint: formString(formData, "speciesHint"),
       colorHint: formString(formData, "colorHint"),
       childDescription: formString(formData, "childDescription"),
