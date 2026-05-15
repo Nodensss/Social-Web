@@ -10,6 +10,7 @@
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "db:generate": "pnpm --filter @toyverse/db prisma:generate",
+    "db:push": "pnpm --filter @toyverse/db prisma:push",
     "db:migrate": "pnpm --filter @toyverse/db prisma:migrate",
     "db:studio": "pnpm --filter @toyverse/db prisma:studio"
   },
