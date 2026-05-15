@@ -66,9 +66,9 @@ async function uploadLocal(input: UploadObjectInput, key: string): Promise<strin
   await mkdir(path.dirname(filePath), { recursive: true });
   await writeFile(filePath, input.bytes);
 
-  const publicBase =
-    process.env.LOCAL_UPLOAD_PUBLIC_URL ??
-    `${(process.env.APP_URL ?? "").replace(/\/$/, "")}/uploads`;
+  // Относительный путь по умолчанию: картинка грузится с того же хоста,
+  // что открыт в браузере (телефон по IP, ноутбук по localhost — всё работает).
+  const publicBase = process.env.LOCAL_UPLOAD_PUBLIC_URL ?? "/uploads";
   return `${publicBase.replace(/\/$/, "")}/${key}`;
 }
 
