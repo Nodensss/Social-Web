@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>FreeLLMAPI · Гайд установки для Toyverse</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #161a22;
+    --panel-2: #1b212c;
+    --line: #262d3a;
+    --ink: #e8ecf2;
+    --mute: #93a1b3;
+    --accent: #ff7a59;
+    --accent-soft: #ff7a5920;
+    --good: #4ade80;
+    --warn: #fbbf24;
+    --bad: #f87171;
+    --code-bg: #0b0e13;
+  }
+  * { box-sizing: border-box }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink); font: 15px/1.55 system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", sans-serif; }
+  a { color: var(--accent); text-decoration: none }
+  a:hover { text-decoration: underline }
+
+  header {
+    position: sticky; top: 0; z-index: 10;
+    background: linear-gradient(180deg, var(--bg) 70%, transparent);
+    padding: 18px 20px 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  header .row { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; max-width: 980px; margin: 0 auto; }
+  header h1 { margin: 0; font-size: 20px; }
+  header .sub { color: var(--mute); font-size: 13px; }
+  .progress {
+    max-width: 980px; margin: 10px auto 0;
+    height: 8px; background: var(--panel); border-radius: 99px; overflow: hidden;
+  }
+  .progress > div { height: 100%; background: var(--accent); width: 0%; transition: width .35s ease; }
+
+  main { max-width: 980px; margin: 0 auto; padding: 20px; display: grid; gap: 16px; }
+
+  .stage {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 16px;
+    overflow: hidden;
+  }
+  .stage > header {
+    position: static; background: transparent; border: 0; padding: 16px 18px;
+    display: flex; align-items: center; gap: 12px; cursor: pointer; user-select: none;
+  }
+  .stage > header h2 { margin: 0; font-size: 17px; flex: 1; }
+  .stage .num {
+    width: 28px; height: 28px; border-radius: 8px; background: var(--panel-2);
+    display: grid; place-items: center; font-weight: 700; color: var(--accent); font-size: 13px;
+  }
+  .stage.done .num { background: var(--good); color: #0b1b10; }
+  .chev { color: var(--mute); transition: transform .2s; }
+  .stage.open .chev { transform: rotate(180deg); }
+
+  .stage .body { display: none; padding: 4px 18px 18px; }
+  .stage.open .body { display: block; }
+
+  .step {
+    border-top: 1px dashed var(--line); padding: 14px 0;
+  }
+  .step:first-child { border-top: 0; padding-top: 4px; }
+  .step h3 { margin: 0 0 6px; font-size: 14px; color: var(--ink); }
+  .step p, .step ul { margin: 6px 0; color: var(--mute); }
+  .step ul { padding-left: 18px; }
+  .step .hint { font-size: 13px; color: var(--mute); }
+
+  pre.code {
+    position: relative;
+    background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px;
+    padding: 12px 44px 12px 12px; margin: 8px 0;
+    overflow: auto; font: 13px/1.5 ui-monospace, SFMono-Regular, Consolas, Menlo, monospace;
+    color: #d6e0ee;
+  }
+  pre.code .copy {
+    position: absolute; top: 6px; right: 6px;
+    background: var(--panel-2); border: 1px solid var(--line); color: var(--ink);
+    border-radius: 8px; padding: 4px 8px; font-size: 11px; cursor: pointer;
+  }
+  pre.code .copy:hover { border-color: var(--accent); color: var(--accent); }
+  pre.code .copy.copied { color: var(--good); border-color: var(--good); }
+
+  .check {
+    display: flex; align-items: flex-start; gap: 10px; padding: 8px 10px;
+    background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px;
+    margin: 8px 0; cursor: pointer; user-select: none;
+  }
+  .check input { margin-top: 3px; accent-color: var(--accent); }
+  .check.done { border-color: var(--good); }
+  .check.done .label { text-decoration: line-through; color: var(--mute); }
+
+  .providers { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+  .prov {
+    background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 12px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .prov.priority { border-color: var(--accent); }
+  .prov h4 { margin: 0; font-size: 14px; display: flex; gap: 6px; align-items: center; }
+  .prov .badge {
+    font-size: 10px; padding: 2px 6px; border-radius: 4px;
+    background: var(--accent-soft); color: var(--accent); font-weight: 700;
+  }
+  .prov .meta { color: var(--mute); font-size: 12px; }
+  .prov a.btn {
+    margin-top: 4px; display: inline-block; text-align: center;
+    background: var(--accent); color: white; padding: 6px 10px;
+    border-radius: 8px; font-size: 12px; font-weight: 600;
+  }
+  .prov a.btn:hover { text-decoration: none; opacity: .9; }
+  .prov label { display: flex; gap: 6px; align-items: center; font-size: 12px; color: var(--mute); cursor: pointer; }
+  .prov input { accent-color: var(--accent); }
+
+  .callout {
+    border-left: 3px solid var(--accent); background: var(--accent-soft);
+    padding: 10px 12px; border-radius: 8px; margin: 10px 0; font-size: 13px;
+  }
+  .callout.warn { border-color: var(--warn); background: #fbbf2410; color: #fde68a; }
+  .callout.bad { border-color: var(--bad); background: #f8717110; color: #fecaca; }
+
+  footer { padding: 30px 20px 50px; color: var(--mute); text-align: center; font-size: 12px; }
+  footer button { background: transparent; border: 1px solid var(--line); color: var(--mute); border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+  footer button:hover { color: var(--bad); border-color: var(--bad); }
+
+  @media (max-width: 600px) {
+    header h1 { font-size: 17px; }
+    main { padding: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="row">
+    <h1>🚀 FreeLLMAPI → Toyverse</h1>
+    <span class="sub">Интерактивный гайд установки. Прогресс сохраняется в браузере.</span>
+  </div>
+  <div class="progress"><div id="progressBar"></div></div>
+</header>
+
+<main id="main">
+
+<!-- STAGE 1 -->
+<section class="stage" data-stage="1">
+  <header>
+    <div class="num">1</div>
+    <h2>Установить прокси FreeLLMAPI</h2>
+    <div class="chev">▾</div>
+  </header>
+  <div class="body">
+
+    <div class="step">
+      <h3>Что нужно заранее</h3>
+      <ul>
+        <li><a href="https://nodejs.org" target="_blank">Node.js 20+</a> — у тебя уже есть для Toyverse</li>
+        <li><a href="https://git-scm.com/download/win" target="_blank">Git для Windows</a></li>
+        <li>PowerShell или Windows Terminal</li>
+      </ul>
+      <label class="check"><input type="checkbox" data-key="prereq" /> <span class="label">Готово, всё установлено</span></label>
+    </div>
+
+    <div class="step">
+      <h3>Клонировать репозиторий и установить зависимости</h3>
+      <p>Открой PowerShell в <code>C:\</code> и выполни:</p>
+      <pre class="code">git clone https://github.com/tashfeenahmed/freellmapi.git
+cd freellmapi
+npm install</pre>
+      <p class="hint">npm install займёт 1–2 минуты.</p>
+      <label class="check"><input type="checkbox" data-key="clone" /> <span class="label">Репозиторий склонирован, npm install отработал без ошибок</span></label>
+    </div>
+
+    <div class="step">
+      <h3>Создать .env и ключ шифрования</h3>
+      <p>В той же папке <code>freellmapi/</code>:</p>
+      <pre class="code">Copy-Item .env.example .env
+$key = node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+Add-Content .env "`nENCRYPTION_KEY=$key"</pre>
+      <div class="callout warn">
+        ⚠ <b>Сохрани этот ENCRYPTION_KEY где-нибудь вне репо</b> (в менеджере паролей).
+        Если потеряешь — все сохранённые ключи провайдеров станут нечитаемыми.
+      </div>
+      <label class="check"><input type="checkbox" data-key="envkey" /> <span class="label">.env создан, ENCRYPTION_KEY сохранён в безопасном месте</span></label>
+    </div>
+
+    <div class="step">
+      <h3>Запустить прокси</h3>
+      <pre class="code">npm run dev</pre>
+      <p>После запуска появятся:</p>
+      <ul>
+        <li>API: <code>http://localhost:3001/v1/chat/completions</code></li>
+        <li>Админка: <a href="http://localhost:5173" target="_blank">http://localhost:5173</a></li>
+      </ul>
+      <div class="callout warn">
+        Если порт 3001 занят — в <code>freellmapi/.env</code> поставь <code>PORT=3002</code>.
+      </div>
+      <label class="check"><input type="checkbox" data-key="run" /> <span class="label">Прокси запущен, админка открывается в браузере</span></label>
+    </div>
+
+  </div>
+</section>
+
+<!-- STAGE 2 -->
+<section class="stage" data-stage="2">
+  <header>
+    <div class="num">2</div>
+    <h2>Получить ключи у провайдеров</h2>
+    <div class="chev">▾</div>
+  </header>
+  <div class="body">
+
+    <div class="step">
+      <p>Тебе <b>не нужны все 14</b>. Достаточно отметить ✅ хотя бы у 3 приоритетных (с оранжевой рамкой).</p>
+    </div>
+
+    <div class="providers" id="providers"></div>
+
+  </div>
+</section>
+
+<!-- STAGE 3 -->
+<section class="stage" data-stage="3">
+  <header>
+    <div class="num">3</div>
+    <h2>Залить ключи в админку прокси</h2>
+    <div class="chev">▾</div>
+  </header>
+  <div class="body">
+
+    <div class="step">
+      <h3>В админке <a href="http://localhost:5173" target="_blank">http://localhost:5173</a></h3>
+      <ol style="color: var(--mute);">
+        <li>Открой раздел <b>Keys</b></li>
+        <li>Для каждого полученного ключа: выбери провайдера → вставь ключ → <b>Save</b></li>
+        <li>В разделе <b>Settings / Fallback</b> задай порядок: <code>Cerebras → Google → Groq → OpenRouter → Mistral</code></li>
+        <li>В разделе <b>API Key / Unified</b> скопируй свой ключ вида <code>freellmapi-...</code></li>
+      </ol>
+      <label class="check"><input type="checkbox" data-key="keys" /> <span class="label">Минимум 3 ключа загружены, fallback настроен</span></label>
+      <label class="check"><input type="checkbox" data-key="unified" /> <span class="label">Скопировал <code>freellmapi-...</code> ключ</span></label>
+    </div>
+
+    <div class="step">
+      <h3>Проверить работу прокси из терминала</h3>
+      <p>Подставь свой ключ вместо <code>freellmapi-твой-ключ</code>:</p>
+      <pre class="code">$KEY = "freellmapi-твой-ключ"
+$body = @{
+  model = "auto"
+  messages = @(@{ role = "user"; content = "Скажи привет по-русски одним предложением." })
+} | ConvertTo-Json -Depth 5
+
+curl http://localhost:3001/v1/chat/completions `
+  -H "Authorization: Bearer $KEY" `
+  -H "Content-Type: application/json" `
+  -d $body</pre>
+      <p>Должен вернуться JSON с русским ответом. Если ошибка — посмотри логи прокси.</p>
+      <label class="check"><input type="checkbox" data-key="test" /> <span class="label">Тестовый запрос вернул осмысленный ответ</span></label>
+    </div>
+
+  </div>
+</section>
+
+<!-- STAGE 4 -->
+<section class="stage" data-stage="4">
+  <header>
+    <div class="num">4</div>
+    <h2>Подключить к Toyverse</h2>
+    <div class="chev">▾</div>
+  </header>
+  <div class="body">
+
+    <div class="step">
+      <h3>Antigravity-версия (C:\Sofaweb\…\toyverse)</h3>
+      <p>В <code>lib/ollama.ts</code> найди <code>createOpenAI({…})</code> и замени:</p>
+      <pre class="code">const baseURL = process.env.LLM_BASE_URL || `${OLLAMA_URL}/v1`;
+const apiKey  = process.env.LLM_API_KEY  || "ollama";
+const openai = createOpenAI({ baseURL, apiKey });</pre>
+
+      <p>В <code>.env</code> добавь:</p>
+      <pre class="code">LLM_BASE_URL=http://localhost:3001/v1
+LLM_API_KEY=freellmapi-твой-ключ
+OLLAMA_MODEL_PROFILE=google/gemini-2.5-flash
+OLLAMA_MODEL_EVENT=cerebras/qwen-3-235b</pre>
+
+      <p class="hint">Точные имена моделей подсмотри в админке прокси (раздел Models).</p>
+      <p>Перезапусти <code>npm run dev</code>. Готово.</p>
+      <label class="check"><input type="checkbox" data-key="antigravity" /> <span class="label">Antigravity-версия подключена</span></label>
+    </div>
+
+    <div class="step">
+      <h3>Наш монорепо (Nodensss/Social-Web)</h3>
+      <p>В корневом <code>.env</code>:</p>
+      <pre class="code">LLM_PROVIDER=openai
+OPENAI_API_KEY=freellmapi-твой-ключ
+OPENAI_BASE_URL=http://localhost:3001/v1
+OPENAI_MODEL=google/gemini-2.5-flash</pre>
+      <div class="callout warn">
+        Если в <code>packages/ai/src/providers/openai-llm.ts</code> нет поддержки
+        <code>OPENAI_BASE_URL</code> — попроси Claude добавить (1 правка).
+      </div>
+      <label class="check"><input type="checkbox" data-key="monorepo" /> <span class="label">Монорепо подключён (или не нужен)</span></label>
+    </div>
+
+  </div>
+</section>
+
+<!-- STAGE 5 -->
+<section class="stage" data-stage="5">
+  <header>
+    <div class="num">5</div>
+    <h2>Автозапуск как у Ollama (опционально)</h2>
+    <div class="chev">▾</div>
+  </header>
+  <div class="body">
+
+    <div class="step">
+      <h3>start-freellmapi.bat</h3>
+      <p>Создай файл <code>C:\freellmapi\start-freellmapi.bat</code>:</p>
+      <pre class="code">@echo off
+cd /d C:\freellmapi
+if not exist logs mkdir logs
+npm run dev &gt; logs\proxy.log 2&gt;&amp;1</pre>
+    </div>
+
+    <div class="step">
+      <h3>Положить в автозагрузку</h3>
+      <ol style="color: var(--mute);">
+        <li>Win+R → <code>shell:startup</code></li>
+        <li>Создай ярлык на <code>start-freellmapi.bat</code> в этой папке</li>
+        <li>Готово — после перезагрузки прокси поднимется автоматически</li>
+      </ol>
+      <label class="check"><input type="checkbox" data-key="autostart" /> <span class="label">Автозапуск настроен</span></label>
+    </div>
+
+    <div class="callout">
+      💡 По аналогии можно сделать автозапуск для Ollama, FreeLLMAPI и Toyverse — получится домашний сервер 24/7.
+    </div>
+
+  </div>
+</section>
+
+<!-- WARNINGS -->
+<section class="stage" data-stage="warn">
+  <header>
+    <div class="num">⚠</div>
+    <h2>Подводные камни — обязательно прочитать</h2>
+    <div class="chev">▾</div>
+  </header>
+  <div class="body">
+
+    <div class="callout bad">
+      <b>Безопасность для детских данных.</b> Прокси локальный, но запросы он шлёт в Google/Groq/Cohere.
+      Они видят содержимое. Для имён игрушек и общих фантазий — ок.
+      Для реальных имён детей, школ, дат рождения — лучше Ollama локально.
+    </div>
+
+    <div class="callout warn">
+      <b>Free-tier меняется без предупреждения.</b> Сегодня лимит 14k токенов/мин, завтра 6k.
+      Поэтому fallback из 3–5 провайдеров — обязателен.
+    </div>
+
+    <div class="callout warn">
+      <b>ToS провайдеров.</b> Free-tier обычно запрещает коммерческое использование.
+      Для семейного — ок, но почитай ToS каждого, на чьи токены полагаешься.
+    </div>
+
+    <div class="callout">
+      <b>Bus factor = 1.</b> У freellmapi 35 коммитов и один мейнтейнер.
+      Если забросит — придётся форкать. Сохрани <code>ENCRYPTION_KEY</code>.
+    </div>
+
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <p>Прогресс сохраняется в localStorage этого браузера.</p>
+  <button id="reset">Сбросить весь прогресс</button>
+</footer>
+
+<script>
+  const PROVIDERS = [
+    { name: "Google Gemini", badge: "Лучший русский", url: "https://aistudio.google.com/apikey", limit: "15 rpm, 1500/день · Gemini 2.5 Flash", priority: true, id: "google" },
+    { name: "Groq", badge: "Самый быстрый", url: "https://console.groq.com/keys", limit: "~14k токенов/мин · Llama 3.3 70B", priority: true, id: "groq" },
+    { name: "Cerebras", badge: "Самый мощный", url: "https://cloud.cerebras.ai", limit: "1M токенов/день · Qwen3 235B", priority: true, id: "cerebras" },
+    { name: "OpenRouter", badge: "Агрегатор", url: "https://openrouter.ai/keys", limit: "Десятки моделей с тегом :free", priority: false, id: "openrouter" },
+    { name: "Mistral", badge: "", url: "https://console.mistral.ai/api-keys", limit: "~1 rps · Mistral Small (нужен номер телефона)", priority: false, id: "mistral" },
+    { name: "SambaNova", badge: "", url: "https://cloud.sambanova.ai", limit: "Llama 3 + Qwen", priority: false, id: "sambanova" },
+    { name: "GitHub Models", badge: "", url: "https://github.com/marketplace/models", limit: "GPT-4o / Llama / Phi через GitHub-токен", priority: false, id: "github" },
+    { name: "Cloudflare Workers AI", badge: "", url: "https://developers.cloudflare.com/workers-ai", limit: "~10k запросов/день, легковесные модели", priority: false, id: "cloudflare" },
+    { name: "Cohere", badge: "", url: "https://cohere.com", limit: "Command R+ · trial credits", priority: false, id: "cohere" },
+    { name: "Zhipu (Z.ai)", badge: "", url: "https://docs.z.ai", limit: "GLM-4 · trial", priority: false, id: "zhipu" },
+    { name: "NVIDIA Build", badge: "", url: "https://build.nvidia.com", limit: "Llama / Nemotron · credits", priority: false, id: "nvidia" },
+  ];
+
+  // Render providers
+  const provBox = document.getElementById("providers");
+  provBox.innerHTML = PROVIDERS.map(p => `
+    <div class="prov ${p.priority ? "priority" : ""}">
+      <h4>${p.name} ${p.badge ? `<span class="badge">${p.badge}</span>` : ""}</h4>
+      <div class="meta">${p.limit}</div>
+      <a class="btn" href="${p.url}" target="_blank" rel="noopener">Получить ключ ↗</a>
+      <label><input type="checkbox" data-key="prov-${p.id}" /> Ключ получен и сохранён</label>
+    </div>
+  `).join("");
+
+  // Persistence
+  const STORAGE = "freellmapi-guide-v1";
+  const state = JSON.parse(localStorage.getItem(STORAGE) || "{}");
+
+  document.querySelectorAll('input[type=checkbox][data-key]').forEach(el => {
+    if (state[el.dataset.key]) el.checked = true;
+    syncCheckUI(el);
+    el.addEventListener("change", () => {
+      state[el.dataset.key] = el.checked;
+      localStorage.setItem(STORAGE, JSON.stringify(state));
+      syncCheckUI(el);
+      updateProgress();
+      updateStages();
+    });
+  });
+
+  function syncCheckUI(el) {
+    const card = el.closest(".check");
+    if (card) card.classList.toggle("done", el.checked);
+  }
+
+  function updateProgress() {
+    const all = document.querySelectorAll('input[type=checkbox][data-key]');
+    const done = [...all].filter(x => x.checked).length;
+    const pct = all.length ? Math.round(done / all.length * 100) : 0;
+    document.getElementById("progressBar").style.width = pct + "%";
+  }
+
+  function updateStages() {
+    document.querySelectorAll(".stage").forEach(stage => {
+      const checks = stage.querySelectorAll('input[type=checkbox][data-key]');
+      if (!checks.length) return;
+      const done = [...checks].every(c => c.checked);
+      stage.classList.toggle("done", done);
+    });
+  }
+
+  // Accordion: open first by default, persist open state
+  const openMap = JSON.parse(localStorage.getItem(STORAGE + "-open") || '{"1":true}');
+  document.querySelectorAll(".stage").forEach(s => {
+    const key = s.dataset.stage;
+    if (openMap[key]) s.classList.add("open");
+    s.querySelector(":scope > header").addEventListener("click", () => {
+      s.classList.toggle("open");
+      openMap[key] = s.classList.contains("open");
+      localStorage.setItem(STORAGE + "-open", JSON.stringify(openMap));
+    });
+  });
+
+  // Copy buttons on every <pre class=code>
+  document.querySelectorAll("pre.code").forEach(pre => {
+    const btn = document.createElement("button");
+    btn.className = "copy";
+    btn.type = "button";
+    btn.textContent = "Копировать";
+    btn.addEventListener("click", async () => {
+      const text = pre.textContent.replace(/Копировать$/, "").trim();
+      try {
+        await navigator.clipboard.writeText(text);
+        btn.textContent = "Скопировано ✓";
+        btn.classList.add("copied");
+        setTimeout(() => { btn.textContent = "Копировать"; btn.classList.remove("copied"); }, 1500);
+      } catch {
+        btn.textContent = "Не удалось";
+      }
+    });
+    pre.appendChild(btn);
+  });
+
+  // Reset
+  document.getElementById("reset").addEventListener("click", () => {
+    if (!confirm("Сбросить весь сохранённый прогресс?")) return;
+    localStorage.removeItem(STORAGE);
+    localStorage.removeItem(STORAGE + "-open");
+    location.reload();
+  });
+
+  updateProgress();
+  updateStages();
+</script>
+
+</body>
+</html>
